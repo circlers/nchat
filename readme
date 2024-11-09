@@ -1,0 +1,52 @@
+(This file is just a collection of random notes. The code may not work properly.)
+
+video:
+	ffmpeg -i /dev/video0 -pix_fmt yuv420p -f m4v tcp://localhost:5566?listen
+	nc localhost 5566 | mpv --profile=low-latency --untimed -
+screen transmission:
+	ffmpeg -f x11grab -i ':0.0' -pix_fmt yuv420p -f m4v 'tcp://0.0.0.0:5566?listen'
+low quality screen transmission:
+	ffmpeg -f x11grab -i ':0.0' -f m4v -s 800x450 'tcp://0.0.0.0:5566?listen'
+screen transmission with replicator:
+	./bin/replicator 1112
+	ffmpeg -f x11grab -i ':0.0' -f m4v -filter:v fps=5 tcp://localhost:1112
+	nc localhost 1112 |  mpv --profile=low-latency --untimed -
+video transmission with replicator:
+	./bin/replicator 1112
+	ffmpeg -i /dev/video0 -pix_fmt yuv420p -f m4v -filter:v fps=5 tcp://localhost:1112
+	nc localhost 1112 |  mpv --profile=low-latency --untimed -
+
+
+==== Old design notes (probably not up to date) ====
+
+Each user uses a sender and a listener to communicate with other users through the relay.
+
+The relay must be accessible to all users. All "smart" processing (e.g. parsing commands) is done on the relay – the user agents can in principle be as "dumb" as ncat.
+
+Listener connects to the relay, introduces itself using the "/listen" command, and listens for incoming messages displaying them.
+
+Sender connects to the relay, introduces itself using the "/nick NICKNAME", and sends outgoing messages to it.
+
+TODO: Relay must accept either bare string or newline-terminated string but must send all strings as newline-terminated.
+TODO: Relay sends status messages to senders with established connections
+	nonblocking sockets + (e)poll()
+	select()
+	multiple threads
+	async i/o
+	io_uring
+
+client:
+	socket()
+	connect()
+	send() recv()
+	close()
+server:
+	socket()
+	bind() - assign address
+	listen() - mark as accepting connections
+	accept() - accept a new pending connection
+		-> dedicated socket
+		send() recv() probably
+		close()
+	close()
+	
